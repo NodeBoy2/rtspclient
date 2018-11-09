@@ -1,0 +1,35 @@
+<!doctype html>
+<!--
+Copyright 2018 The Go Authors. All rights reserved.
+Use of this source code is governed by a BSD-style
+license that can be found in the LICENSE file.
+-->
+<html>
+    
+<head>
+	<meta charset="utf-8">
+	<meta http-equiv="cache-control" content="no-cache">
+	<title>Go wasm</title>
+</head>
+
+<body>
+
+	<script src="wasm_exec.js"></script>
+	<script src="./loadrtspclient.js"></script>
+	<script src="./rtspsession.js?=1"></script>
+	<script>
+		var rtspSession
+		
+		function Create() {
+			rtspSession = new RtspSession()
+		}
+
+		function Play() {
+			rtspSession.Play("rtsp://103.60.165.57:10554/A8BE16020167?channel=0")
+		}
+	</script>
+
+	<button onClick="Play();" id="play" enabled>play</button>
+	<button onClick="Create();" id="Create" enabled>Create</button>
+</body>
+</html>
