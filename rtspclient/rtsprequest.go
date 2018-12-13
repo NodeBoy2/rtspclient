@@ -19,6 +19,7 @@ type RtspClientContext struct {
 	setupHeaders string
 	cseq         int
 	bandwidth    int //bps
+	authenicator *Authenticator
 }
 
 func NewRtspClientContext() *RtspClientContext {
@@ -47,6 +48,9 @@ func (session *RtspClientSession) SendDescribe() error {
 	if 0 != session.rtspContext.bandwidth {
 		request += fmt.Sprintf("Bandwidth: %d\r\n", session.rtspContext.bandwidth)
 	}
+	if nil != session.rtspContext.authenicator {
+		request += session.rtspContext.authenicator.createAuthenticatorString("DESCRIBE", session.rtspContext.rtspURL)
+	}
 	request += "\r\n"
 	session.sendRequst([]byte(request))
 	return nil
@@ -66,6 +70,9 @@ func (session *RtspClientSession) SendTcpSetup(inTrackURL string, inClientRTPid 
 
 	if 0 != session.rtspContext.bandwidth {
 		request += fmt.Sprintf("Bandwidth: %d\r\n", session.rtspContext.bandwidth)
+	}
+	if nil != session.rtspContext.authenicator {
+		request += session.rtspContext.authenicator.createAuthenticatorString("SETUP", session.rtspContext.rtspURL)
 	}
 	request += "\r\n"
 	session.sendRequst([]byte(request))
@@ -94,6 +101,9 @@ func (session *RtspClientSession) SendPlay(inStartTimeSec int, inSpeed int) erro
 	if 0 != session.rtspContext.bandwidth {
 		request += fmt.Sprintf("Bandwidth: %d\r\n", session.rtspContext.bandwidth)
 	}
+	if nil != session.rtspContext.authenicator {
+		request += session.rtspContext.authenicator.createAuthenticatorString("PLAY", session.rtspContext.rtspURL)
+	}
 	request += "\r\n"
 	session.sendRequst([]byte(request))
 
@@ -109,6 +119,9 @@ func (session *RtspClientSession) SendTeardown() error {
 		"CSeq: %d\r\n" +
 		"User-agent: %s\r\n"), session.rtspContext.rtspURL, session.rtspContext.cseq, session.rtspContext.userAgent)
 
+	if nil != session.rtspContext.authenicator {
+		request += session.rtspContext.authenicator.createAuthenticatorString("TEARDOWN", session.rtspContext.rtspURL)
+	}
 	request += "\r\n"
 	session.sendRequst([]byte(request))
 

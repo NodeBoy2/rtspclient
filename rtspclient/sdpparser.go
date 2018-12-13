@@ -107,14 +107,17 @@ func getFramerateForFramerate(sdpFramerate string) int {
 func getFmtParame(sdpFmtp string) map[string]string {
 	fmtParame := make(map[string]string)
 
-	fields := strings.Split(sdpFmtp, " ")
-	for _, field := range fields {
-		field = strings.Replace(field, ";", "", -1)
-		index := strings.Index(field, "=")
-		if index == -1 {
-			fmtParame[field] = ""
-		} else {
-			fmtParame[field[:index]] = field[index+1:]
+	fieldsFmtp := strings.Split(sdpFmtp, " ")
+	for _, field := range fieldsFmtp {
+		fields := strings.Split(field, " ")
+		for _, fieldTemp := range fields {
+			fieldTemp = strings.Replace(fieldTemp, ";", "", -1)
+			index := strings.Index(fieldTemp, "=")
+			if index == -1 {
+				fmtParame[fieldTemp] = ""
+			} else {
+				fmtParame[fieldTemp[:index]] = field[index+1:]
+			}
 		}
 	}
 	return fmtParame

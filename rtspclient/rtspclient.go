@@ -1,13 +1,18 @@
 package rtspclient
 
 import (
+	"bytes"
+	"encoding/binary"
 	"errors"
 	"log"
 	"net"
+	"net/url"
 	"rtspclient/tcpnetwork"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/gorilla/websocket"
 )
 
 const (
@@ -63,7 +68,6 @@ type RtspClientSession struct {
 	username           string
 	password           string
 	address            string
-	port               int
 	rtspRequestInitial bool
 	timeoutSec         int
 	rtspContext        *RtspClientContext
@@ -76,6 +80,12 @@ type RtspClientSession struct {
 	rtpChannelMap      map[int]*RtpParser
 	sdpInfo            *SDPInfo
 	RtpMediaMap        map[int]MediaSubsession
+	lastVideoTimestamp uint32
+	lastAudioTimestamp uint32
+	curVideoPts        uint32
+	curAudioPts        uint32
+	audioCout          int32
+	videoCout          int32
 }
 
 func NewRtspClientSession(rtpHandler func(*RtspData), eventHandler func(*RtspEvent)) *RtspClientSession {
@@ -159,13 +169,51 @@ func (session *RtspClientSession) parsingData(data []byte) {
 }
 
 func (session *RtspClientSession) parsingRtp(data []byte) {
+	header := data[:4]
+	rtpData := data[4:]
+
+	timestampBufBefore := rtpData[4:8]
+	reader := bytes.NewReader(timestampBufBefore)
+	var timestamp uint32
+	err := binary.Read(reader, binary.BigEndian, &timestamp)
+	if nil != err {
+		return
+	}
+
 	// rtp data
-	channelNum := int(data[1])
+	channelNum := int(header[1])
 	rtpParser, ok := session.rtpChannelMap[channelNum]
 	if ok {
-		payload := rtpParser.pushData(data[4:])
+		payload := rtpParser.pushData(rtpData)
 		if nil != payload {
 			session.dataHandle(newRtspData(channelNum, session, payload))
+
+			if 0 == channelNum {
+				if session.lastVideoTimestamp != timestamp {
+					session.videoCout++
+					if session.lastVideoTimestamp != 0 {
+						session.curVideoPts += ((timestamp - session.lastVideoTimestamp) / 90)
+						if timestamp < session.lastVideoTimestamp {
+							log.Println("video cout: ", session.videoCout, " video pts: ", session.curVideoPts)
+							log.Println(timestamp, ",", session.lastVideoTimestamp)
+						}
+					}
+					session.lastVideoTimestamp = timestamp
+				}
+			} else if 2 == channelNum {
+				if session.lastAudioTimestamp != timestamp {
+					session.audioCout++
+					if session.lastAudioTimestamp != 0 {
+						session.curAudioPts += ((timestamp - session.lastAudioTimestamp) / 16)
+
+						if timestamp < session.lastAudioTimestamp {
+							log.Println("audio cout: ", session.audioCout, " audio pts: ", session.curAudioPts)
+							log.Println(timestamp, ",", session.lastAudioTimestamp)
+						}
+					}
+					session.lastAudioTimestamp = timestamp
+				}
+			}
 		}
 	}
 }
@@ -179,55 +227,6 @@ func (session *RtspClientSession) parsingRtsp(data []byte) {
 		return
 	}
 	session.rtspResponseQueue <- rtspResponseContext
-}
-
-func (session *RtspClientSession) parsingURL(url string) {
-	// Parse the URL as "rtsp://[<username>[:<password>]@]<server-address-or-name>[:<port>][/<path>]"
-	headerLen := len("rtsp://")
-	if headerLen >= len(url) {
-		return
-	}
-
-	session.rtspContext.rtspURL = url
-	session.username, session.password, session.address = "", "", ""
-	session.port = 0
-
-	containUser := strings.Contains(url, "@")
-	addrStartPos := headerLen
-	if containUser {
-		// parse username and password
-		userInfoEndPos := strings.IndexRune(url, '@')
-		userInfo := string(url[headerLen:userInfoEndPos])
-		usernameEndPos := strings.IndexRune(userInfo, ':')
-		if -1 != usernameEndPos {
-			session.password = string(userInfo[usernameEndPos+1:])
-			session.username = string(userInfo[:usernameEndPos])
-		} else {
-			session.username = userInfo
-		}
-		addrStartPos = userInfoEndPos + 1
-	}
-	noUserURL := string(url[addrStartPos:])
-	addrEndPos := strings.IndexRune(noUserURL, '/')
-	var addrInfo string
-	if -1 != addrEndPos {
-		addrInfo = string(noUserURL[:addrEndPos])
-	} else {
-		addrInfo = noUserURL
-	}
-	ipEndPos := strings.IndexRune(addrInfo, ':')
-	if -1 != ipEndPos {
-		session.address = string(addrInfo[:ipEndPos])
-		strPort := string(addrInfo[ipEndPos+1:])
-		port, err := strconv.Atoi(strPort)
-		if nil != err {
-			log.Println("prot error.")
-		} else {
-			session.port = port
-		}
-	} else {
-		session.address = addrInfo
-	}
 }
 
 func (session *RtspClientSession) sendRequest() error {
@@ -245,12 +244,32 @@ func (session *RtspClientSession) sendRequest() error {
 	}()
 
 	session.sdpInfo = nil
+	session.rtspContext.authenicator = nil
+
 	session.SendDescribe()
 
 	response, errorInfo = session.WaitRtspResponse()
 	if nil != errorInfo {
 		return errorInfo
 	}
+	if 401 == response.status && session.username != "" && session.password != "" {
+		if nil != response.digestAuthenticator {
+			session.rtspContext.authenicator = response.digestAuthenticator
+		} else if nil != response.basicAuthenticator {
+			session.rtspContext.authenicator = response.basicAuthenticator
+		}
+		if nil != session.rtspContext.authenicator {
+			session.rtspContext.authenicator.username = session.username
+			session.rtspContext.authenicator.password = session.password
+		}
+
+		session.SendDescribe()
+		response, errorInfo = session.WaitRtspResponse()
+		if nil != errorInfo {
+			return errorInfo
+		}
+	}
+
 	if 200 != response.status {
 		return errors.New("response error: " + strconv.Itoa(response.status))
 	}
@@ -301,6 +320,39 @@ func (session *RtspClientSession) sendRequest() error {
 	return nil
 }
 
+func (session *RtspClientSession) ParsingURL(rtspURL string) error {
+	urlInfo, urlError := url.Parse(rtspURL)
+	if nil != urlError {
+		return errors.New("url parse error: " + rtspURL)
+	}
+
+	if "" != urlInfo.RawQuery {
+		session.rtspContext.rtspURL += ("?" + urlInfo.RawQuery)
+	}
+	session.address = urlInfo.Host
+	if !strings.Contains(session.address, ":") {
+		session.address += ":554"
+	}
+
+	if nil != urlInfo.User {
+		session.username = urlInfo.User.Username()
+		session.password, _ = urlInfo.User.Password()
+	}
+
+	urlInfo.User = nil
+	session.rtspContext.rtspURL = urlInfo.String()
+	return nil
+}
+
+func (session *RtspClientSession) SetConnection(conn net.Conn) error {
+	session.tcpConn = tcpnetwork.NewConnection(conn, 0x0fff, session.pushConnEvent)
+	session.tcpConn.SetStreamProtocol(session.rtpProtocol)
+	session.tcpConn.Run()
+	go session.HandleConn()
+
+	return session.sendRequest()
+}
+
 func (session *RtspClientSession) Close() {
 	if session.tcpConn.GetStatus() == tcpnetwork.ConnEventConnected {
 		session.SendTeardown()
@@ -309,34 +361,46 @@ func (session *RtspClientSession) Close() {
 	session.tcpConn.Close()
 }
 
-func (session *RtspClientSession) Play(url string) error {
+func (session *RtspClientSession) PlayUseWebsocket(webURL string, rtspURL string) error {
+	urlError := session.ParsingURL(rtspURL)
+	if nil != urlError {
+		return errors.New("url parse error: " + rtspURL)
+	}
+
+	websocketConn, _, err := websocket.DefaultDialer.Dial(webURL, nil)
+	if nil != err {
+		session.sendEvent(RtspEventDisconnected, nil)
+		log.Println("connect error: ", webURL)
+		return err
+	}
+
+	conn := &WebsocketConn{conn: websocketConn}
+
+	session.SetConnection(conn)
+	return nil
+}
+
+func (session *RtspClientSession) Play(rtspURL string) error {
 
 	if nil != session.tcpConn && tcpnetwork.ConnStatusConnected == session.tcpConn.GetStatus() {
 		return errors.New("session is connected")
 	}
 
-	session.parsingURL(url)
-	// create connection
-	tcpAddr := session.address
-	if 0 != session.port {
-		tcpAddr += ":"
-		tcpAddr += strconv.Itoa(session.port)
+	urlError := session.ParsingURL(rtspURL)
+	if nil != urlError {
+		return errors.New("url parse error: " + rtspURL)
 	}
 
-	conn, err := net.DialTimeout("tcp", tcpAddr, time.Duration(session.timeoutSec)*time.Second)
+	// create connection
+	conn, err := net.DialTimeout("tcp", session.address, time.Duration(session.timeoutSec)*time.Second)
 	if nil != err {
 		session.sendEvent(RtspEventDisconnected, nil)
 		println(err.Error())
-		println(tcpAddr)
-		return errors.New("connect " + tcpAddr + "")
+		println(session.address)
+		return errors.New("connect " + session.address + "")
 	}
 
-	session.tcpConn = tcpnetwork.NewConnection(conn, 0x0fff, session.pushConnEvent)
-	session.tcpConn.SetStreamProtocol(session.rtpProtocol)
-	session.tcpConn.Run()
-	go session.HandleConn()
-
-	return session.sendRequest()
+	return session.SetConnection(conn)
 }
 
 func (session *RtspClientSession) WaitRtspResponse() (*RtspResponseContext, error) {
@@ -349,9 +413,6 @@ func (session *RtspClientSession) WaitRtspResponse() (*RtspResponseContext, erro
 		{
 			if !ok {
 				return nil, errors.New("rtsp connection disconnect")
-			}
-			if 200 != response.status {
-				return nil, errors.New("rtsp response error: " + strconv.Itoa(response.status))
 			}
 			if nil == response {
 				return nil, errors.New("parsing rtsp response error")

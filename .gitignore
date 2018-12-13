@@ -1,2 +1,3 @@
 /.vscode
 /tcpnetwork/test/*.exe
+*.exe

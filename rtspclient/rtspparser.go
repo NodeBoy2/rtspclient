@@ -2,15 +2,18 @@ package rtspclient
 
 import (
 	"errors"
+	"fmt"
 	"strconv"
 	"strings"
 )
 
 type RtspResponseContext struct {
-	status        int
-	contentLength int
-	content       string
-	sessionID     string
+	status              int
+	contentLength       int
+	content             string
+	sessionID           string
+	basicAuthenticator  *Authenticator
+	digestAuthenticator *Authenticator
 }
 
 const (
@@ -63,7 +66,30 @@ func ParserRtspResponse(response []byte, context *RtspResponseContext) error {
 			}
 		} else if theKey == strings.ToUpper(sSessionHeader) {
 			context.sessionID = theValue
+		} else if theKey == strings.ToUpper(sAuthenticateHeader) {
+			authenticateType, realm, nonce, _ := parsingAuthenticate(theValue)
+			if "Digest" == authenticateType {
+				context.digestAuthenticator = NewAuthenticator()
+				context.digestAuthenticator.realm = realm
+				context.digestAuthenticator.nonce = nonce
+				context.digestAuthenticator.authenicatorType = AuthenticatorTypeDigest
+			} else if "Basic" == authenticateType {
+				context.basicAuthenticator = NewAuthenticator()
+				context.basicAuthenticator.realm = realm
+				context.basicAuthenticator.authenicatorType = AuthenticatorTypeBasic
+			}
 		}
 	}
 	return nil
+}
+
+func parsingAuthenticate(authenticateValue string) (string, string, string, string) {
+	authenticateValue = strings.Replace(authenticateValue, "\"", " ", -1)
+	var realm string
+	var nonce string
+	var stale string
+	var authenticateType string
+
+	fmt.Sscanf(authenticateValue, " %s realm= %s , nonce= %s , stale= %s ", &authenticateType, &realm, &nonce, &stale)
+	return authenticateType, realm, nonce, stale
 }

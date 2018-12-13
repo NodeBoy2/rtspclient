@@ -1,6 +1,7 @@
 package tcpnetwork
 
 import (
+	"bufio"
 	"bytes"
 	"errors"
 	"log"
@@ -38,6 +39,7 @@ const (
 // Connection TCP connection context
 type Connection struct {
 	conn                net.Conn
+	connRW              *bufio.ReadWriter
 	status              int
 	sendMsgQueue        chan []byte
 	sendBufferSize      int
@@ -67,6 +69,7 @@ func newConnEvent(eventType int, connect *Connection, data []byte) *ConnEvent {
 func NewConnection(c net.Conn, sendBufferSize int, eventHandler func(*ConnEvent)) *Connection {
 	return &Connection{
 		conn:                c,
+		connRW:              bufio.NewReadWriter(bufio.NewReaderSize(c, connConfMaxReadBufferLength), bufio.NewWriterSize(c, connConfMaxReadBufferLength)),
 		status:              ConnStatusNone,
 		sendMsgQueue:        make(chan []byte, sendBufferSize),
 		sendBufferSize:      sendBufferSize,
@@ -236,17 +239,19 @@ func (connection *Connection) routineSend() error {
 				headerBytes := connection.streamProtocol.SerializeHeader(sendMsg)
 				if nil != headerBytes {
 					// write header first
-					_, err = connection.conn.Write(headerBytes)
+					_, err = connection.connRW.Write(headerBytes)
 					if err != nil {
 						log.Println("Conn write error:", err)
 						return err
 					}
+					connection.connRW.Flush()
 				}
-				_, err = connection.conn.Write(sendMsg)
+				_, err = connection.connRW.Write(sendMsg)
 				if err != nil {
 					log.Println("Conn write error:", err)
 					return err
 				}
+				connection.connRW.Flush()
 			}
 		}
 	}
@@ -270,7 +275,7 @@ func (connection *Connection) routineRead() error {
 func (connection *Connection) read(buf []byte) error {
 	readLen := 0
 	for readLen < len(buf) {
-		len, err := connection.conn.Read(buf[readLen:])
+		len, err := connection.connRW.Read(buf[readLen:])
 		if nil != err {
 			return err
 		}
@@ -336,7 +341,7 @@ func (connection *Connection) unpack(buf []byte) ([]byte, error) {
 			return nil, err
 		}
 	} else {
-		allDataLen, _ := connection.conn.Read(buf[bufStartPos:])
+		allDataLen, _ := connection.connRW.Read(buf[bufStartPos:])
 		bufStartPos += allDataLen
 		msg = make([]byte, bufStartPos)
 		copy(msg, buf[:bufStartPos])
