@@ -8,7 +8,7 @@ import (
 )
 
 type RtspResponseContext struct {
-	status              int
+	Status              int
 	contentLength       int
 	content             string
 	sessionID           string
@@ -33,7 +33,7 @@ func ParserRtspResponse(response []byte, context *RtspResponseContext) error {
 		return errors.New("not rtsp packet")
 	}
 
-	context.status = 0
+	context.Status = 0
 	context.contentLength = 0
 	context.content = ""
 
@@ -47,7 +47,7 @@ func ParserRtspResponse(response []byte, context *RtspResponseContext) error {
 
 	// get status code
 	strStatus := string(response[len("RTSP/1.0 ") : len("RTSP/1.0 ")+3]) // skip past RTSP/1.0
-	context.status, _ = strconv.Atoi(strStatus)
+	context.Status, _ = strconv.Atoi(strStatus)
 
 	fields := strings.Split(string(rtspResponse), "\r\n")
 	for _, field := range fields {

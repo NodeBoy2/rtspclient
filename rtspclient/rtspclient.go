@@ -85,7 +85,7 @@ type RtspClientSession struct {
 	curVideoPts        uint32
 	curAudioPts        uint32
 	audioCout          int32
-	videoCout          int32
+	VideoCout          int32
 }
 
 func NewRtspClientSession(rtpHandler func(*RtspData), eventHandler func(*RtspEvent)) *RtspClientSession {
@@ -190,11 +190,11 @@ func (session *RtspClientSession) parsingRtp(data []byte) {
 
 			if 0 == channelNum {
 				if session.lastVideoTimestamp != timestamp {
-					session.videoCout++
+					session.VideoCout++
 					if session.lastVideoTimestamp != 0 {
 						session.curVideoPts += ((timestamp - session.lastVideoTimestamp) / 90)
 						if timestamp < session.lastVideoTimestamp {
-							log.Println("video cout: ", session.videoCout, " video pts: ", session.curVideoPts)
+							log.Println("video cout: ", session.VideoCout, " video pts: ", session.curVideoPts)
 							log.Println(timestamp, ",", session.lastVideoTimestamp)
 						}
 					}
@@ -252,7 +252,7 @@ func (session *RtspClientSession) sendRequest() error {
 	if nil != errorInfo {
 		return errorInfo
 	}
-	if 401 == response.status && session.username != "" && session.password != "" {
+	if 401 == response.Status && session.username != "" && session.password != "" {
 		if nil != response.digestAuthenticator {
 			session.rtspContext.authenicator = response.digestAuthenticator
 		} else if nil != response.basicAuthenticator {
@@ -270,8 +270,8 @@ func (session *RtspClientSession) sendRequest() error {
 		}
 	}
 
-	if 200 != response.status {
-		return errors.New("response error: " + strconv.Itoa(response.status))
+	if 200 != response.Status {
+		return errors.New("response error: " + strconv.Itoa(response.Status))
 	}
 
 	session.sdpInfo = parsingSDP(response.content)
@@ -301,8 +301,8 @@ func (session *RtspClientSession) sendRequest() error {
 		if nil != errorInfo {
 			return errorInfo
 		}
-		if 200 != response.status {
-			return errors.New("response error: " + strconv.Itoa(response.status))
+		if 200 != response.Status {
+			return errors.New("response error: " + strconv.Itoa(response.Status))
 		}
 		session.rtspContext.sessionID = response.sessionID
 	}
@@ -312,8 +312,8 @@ func (session *RtspClientSession) sendRequest() error {
 	if nil != errorInfo {
 		return errorInfo
 	}
-	if 200 != response.status {
-		return errors.New("response error: " + strconv.Itoa(response.status))
+	if 200 != response.Status {
+		return errors.New("response error: " + strconv.Itoa(response.Status))
 	}
 
 	sendRequestSuccess = true

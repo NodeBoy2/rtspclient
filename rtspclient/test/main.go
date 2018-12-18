@@ -58,11 +58,11 @@ func (handler *RtspHandler) RtspEventHandler(event *rtspclient.RtspEvent) {
 func (handler *RtspHandler) RtpEventHandler(data *rtspclient.RtspData) {
 	handler.lock.Lock()
 	defer handler.lock.Unlock()
-	if 20 > len(data.Data) {
-		log.Printf("%x", data.Data)
-	} else {
-		log.Printf("%x", data.Data[:20])
-	}
+	// if 20 > len(data.Data) {
+	// 	log.Printf("%x", data.Data)
+	// } else {
+	// 	log.Printf("%x", data.Data[:20])
+	// }
 
 	if len(handler.mediaHandler) < 0 {
 		log.Println("media handler not init")
@@ -72,20 +72,47 @@ func (handler *RtspHandler) RtpEventHandler(data *rtspclient.RtspData) {
 	file, _ := os.OpenFile("D://test//"+strconv.Itoa(data.ChannelNum), os.O_WRONLY|os.O_APPEND, os.ModeAppend)
 	defer file.Close()
 
-	file.Write(handler.mediaHandler[data.ChannelNum].ParsingData(data.Data))
+	// file.Write(handler.mediaHandler[data.ChannelNum].ParsingData(data.Data))
 }
 
+func CalculateFramerate(session *rtspclient.RtspClientSession) {
+	lastVideoCout := int32(0)
+	for {
+		select {
+		case <-time.NewTicker(1 * time.Second).C:
+			log.Println("Current Frame Rate: ", session.VideoCout-lastVideoCout)
+			lastVideoCout = session.VideoCout
+		}
+	}
+}
 func main() {
 	rtspHandler := &RtspHandler{}
 	rtspSession := rtspclient.NewRtspClientSession(rtspHandler.RtpEventHandler, rtspHandler.RtspEventHandler)
-	// err := rtspSession.Play("rtsp://103.60.165.57:10554/A8BE16020167?channel=0")
+	err := rtspSession.Play("rtsp://192.168.10.50:10556/playback?serial=6072b43ec06d49f79c49febac8c64676&channel=67&starttime=20181212000000&endtime=20181212000400&isreduce=0")
 	// err := rtspSession.Play("rtsp://192.168.1.247:10554/55c6516500514c8684c323ea60f59068?channel=7")
-	err := rtspSession.PlayUseWebsocket("ws://192.168.1.76:8080/websocket", "rtsp://admin:hk234567@192.168.10.103:554/Streaming/Channels/101?transportmode=unicast&profile=Profil_1")
+	// err := rtspSession.PlayUseWebsocket("ws://192.168.1.76:8080/websocket", "rtsp://admin:hk234567@192.168.10.103:554/Streaming/Channels/101?transportmode=unicast&profile=Profil_1")
 	// err := rtspSession.Play("rtsp://fengyf:fengyf@192.168.10.113/cam/realmonitor?channel=1&subtype=0&unicast=true&proto=Onvif")
 	// err := rtspSession.Play("rtsp://admin:hk234567@192.168.10.103:554/Streaming/Channels/101?transportmode=unicast&profile=Profil_1")
 	// err := rtspSession.Play("rtsp://admin:Hk123456@192.168.10.107:554/Streaming/Channels/101?transportmode=unicast&profile=Profil_1")
 	if nil != err {
 		log.Print(err)
+		return
+	}
+
+	err = rtspSession.SendPlay(0, 4)
+	if nil != err {
+		log.Print(err)
+		return
+	}
+	go CalculateFramerate(rtspSession)
+
+	response, errorInfo := rtspSession.WaitRtspResponse()
+	if nil != errorInfo {
+		log.Print(errorInfo)
+	}
+	if 200 != response.Status {
+		log.Print("Send Play error")
+		return
 	}
 
 	select {
