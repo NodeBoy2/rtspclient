@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"gitlab.bmi/fyf/rtspclient.git/tcpnetwork"
+	"github.com/Nodeboy2/rtspclient/tcpnetwork"
 
 	"github.com/gorilla/websocket"
 )

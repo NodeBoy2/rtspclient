@@ -5,7 +5,7 @@ import (
 	"net"
 	"time"
 
-	"gitlab.bmi/fyf/rtspclient.git/sdp"
+	"github.com/Nodeboy2/rtspclient/sdp"
 )
 
 func main() {

@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	"gitlab.bmi/fyf/rtspclient.git/sdp"
+	"github.com/Nodeboy2/rtspclient/sdp"
 )
 
 type MediaSubsession struct {

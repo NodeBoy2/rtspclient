@@ -1,6 +1,6 @@
 package main
 
-import "gitlab.bmi/fyf/rtspclient.git/rtspclient"
+import "github.com/Nodeboy2/rtspclient/rtspclient"
 
 type DefaultDataHandle struct {
 }
