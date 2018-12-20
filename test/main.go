@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/NodeBoy2/rtspclient/rtspclient"
+	"github.com/NodeBoy2/rtspclient"
 )
 
 type MediaDataHandler interface {
