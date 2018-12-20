@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 
-	"rtspclient/sdp"
+	"gitlab.bmi/fyf/rtspclient.git/sdp"
 )
 
 func main() {

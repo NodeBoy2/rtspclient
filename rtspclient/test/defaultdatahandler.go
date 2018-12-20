@@ -1,8 +1,6 @@
 package main
 
-import (
-	"rtspclient/rtspclient"
-)
+import "gitlab.bmi/fyf/rtspclient.git/rtspclient"
 
 type DefaultDataHandle struct {
 }

@@ -1,0 +1,4 @@
+github.com/gorilla/websocket v1.4.0 h1:WDFjx/TMzVgy9VdMMQi2K2Emtwi2QcUQsztZ/zLaH/Q=
+github.com/gorilla/websocket v1.4.0/go.mod h1:E7qHFY5m1UJ88s3WnNqhKjPHQ0heANvMoAMk2YaljkQ=
+gitlab.bmi/fyf/rtspclient.git v0.0.0-20181218073150-463ef968a3c9 h1:ghMtpG3dqX2ozKQw5Mef/1R6EPyyCelrL5CCjzl0AZk=
+gitlab.bmi/fyf/rtspclient.git v0.0.0-20181218073150-463ef968a3c9/go.mod h1:lUB6tdx7j8pNR75jT++KFCADObPFmaQDjV6YFSxU4yU=

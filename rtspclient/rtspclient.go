@@ -7,10 +7,11 @@ import (
 	"log"
 	"net"
 	"net/url"
-	"rtspclient/tcpnetwork"
 	"strconv"
 	"strings"
 	"time"
+
+	"gitlab.bmi/fyf/rtspclient.git/tcpnetwork"
 
 	"github.com/gorilla/websocket"
 )
@@ -426,5 +427,4 @@ func (session *RtspClientSession) WaitRtspResponse() (*RtspResponseContext, erro
 		}
 	}
 
-	return nil, nil
 }

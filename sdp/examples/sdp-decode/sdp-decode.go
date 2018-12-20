@@ -7,7 +7,7 @@ import (
 	"log"
 	"os"
 
-	"rtspclient/sdp"
+	"gitlab.bmi/fyf/rtspclient.git/sdp"
 )
 
 func main() {

@@ -2,7 +2,8 @@ package main
 
 import (
 	"encoding/base64"
-	"rtspclient/rtspclient"
+
+	"gitlab.bmi/fyf/rtspclient.git/rtspclient"
 )
 
 type H265DataHandle struct {

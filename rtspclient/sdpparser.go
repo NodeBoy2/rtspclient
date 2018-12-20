@@ -3,9 +3,10 @@ package rtspclient
 import (
 	"fmt"
 	"log"
-	"rtspclient/sdp"
 	"strconv"
 	"strings"
+
+	"gitlab.bmi/fyf/rtspclient.git/sdp"
 )
 
 type MediaSubsession struct {

@@ -3,10 +3,11 @@ package main
 import (
 	"log"
 	"os"
-	"rtspclient/rtspclient"
 	"strconv"
 	"sync"
 	"time"
+
+	"gitlab.bmi/fyf/rtspclient.git/rtspclient"
 )
 
 type MediaDataHandler interface {

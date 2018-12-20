@@ -3,8 +3,9 @@ package main
 import (
 	"log"
 	"net"
-	"rtspclient/tcpnetwork"
 	"time"
+
+	"gitlab.bmi/fyf/rtspclient.git/tcpnetwork"
 )
 
 type ClientEventQueue struct {
