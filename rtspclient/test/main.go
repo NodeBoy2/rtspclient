@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Nodeboy2/rtspclient/rtspclient"
+	"github.com/NodeBoy2/rtspclient/rtspclient"
 )
 
 type MediaDataHandler interface {
@@ -89,11 +89,11 @@ func CalculateFramerate(session *rtspclient.RtspClientSession) {
 func main() {
 	rtspHandler := &RtspHandler{}
 	rtspSession := rtspclient.NewRtspClientSession(rtspHandler.RtpEventHandler, rtspHandler.RtspEventHandler)
-	err := rtspSession.Play("rtsp://192.168.10.50:10556/playback?serial=6072b43ec06d49f79c49febac8c64676&channel=67&starttime=20181212000000&endtime=20181212000400&isreduce=0")
+	// err := rtspSession.Play("rtsp://192.168.10.50:10556/playback?serial=6072b43ec06d49f79c49febac8c64676&channel=67&starttime=20181212000000&endtime=20181212000400&isreduce=0")
 	// err := rtspSession.Play("rtsp://192.168.1.247:10554/55c6516500514c8684c323ea60f59068?channel=7")
 	// err := rtspSession.PlayUseWebsocket("ws://192.168.1.76:8080/websocket", "rtsp://admin:hk234567@192.168.10.103:554/Streaming/Channels/101?transportmode=unicast&profile=Profil_1")
 	// err := rtspSession.Play("rtsp://fengyf:fengyf@192.168.10.113/cam/realmonitor?channel=1&subtype=0&unicast=true&proto=Onvif")
-	// err := rtspSession.Play("rtsp://admin:hk234567@192.168.10.103:554/Streaming/Channels/101?transportmode=unicast&profile=Profil_1")
+	err := rtspSession.Play("rtsp://admin:hk234567@192.168.10.103:554/Streaming/Channels/101?transportmode=unicast&profile=Profil_1")
 	// err := rtspSession.Play("rtsp://admin:Hk123456@192.168.10.107:554/Streaming/Channels/101?transportmode=unicast&profile=Profil_1")
 	if nil != err {
 		log.Print(err)

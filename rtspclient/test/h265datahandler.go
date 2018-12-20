@@ -3,7 +3,7 @@ package main
 import (
 	"encoding/base64"
 
-	"github.com/Nodeboy2/rtspclient/rtspclient"
+	"github.com/NodeBoy2/rtspclient/rtspclient"
 )
 
 type H265DataHandle struct {

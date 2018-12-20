@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 
-	"github.com/Nodeboy2/rtspclient/sdp"
+	"github.com/NodeBoy2/rtspclient/sdp"
 )
 
 func main() {

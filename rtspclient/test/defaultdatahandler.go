@@ -1,6 +1,6 @@
 package main
 
-import "github.com/Nodeboy2/rtspclient/rtspclient"
+import "github.com/NodeBoy2/rtspclient/rtspclient"
 
 type DefaultDataHandle struct {
 }
