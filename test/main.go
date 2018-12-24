@@ -59,11 +59,11 @@ func (handler *RtspHandler) RtspEventHandler(event *rtspclient.RtspEvent) {
 func (handler *RtspHandler) RtpEventHandler(data *rtspclient.RtspData) {
 	handler.lock.Lock()
 	defer handler.lock.Unlock()
-	// if 20 > len(data.Data) {
-	// 	log.Printf("%x", data.Data)
-	// } else {
-	// 	log.Printf("%x", data.Data[:20])
-	// }
+	if 20 > len(data.Data) {
+		log.Printf("%x", data.Data)
+	} else {
+		log.Printf("%x", data.Data[:20])
+	}
 
 	if len(handler.mediaHandler) < 0 {
 		log.Println("media handler not init")
@@ -93,7 +93,7 @@ func main() {
 	// err := rtspSession.Play("rtsp://192.168.1.247:10554/55c6516500514c8684c323ea60f59068?channel=7")
 	// err := rtspSession.PlayUseWebsocket("ws://192.168.1.76:8080/websocket", "rtsp://admin:hk234567@192.168.10.103:554/Streaming/Channels/101?transportmode=unicast&profile=Profil_1")
 	// err := rtspSession.Play("rtsp://fengyf:fengyf@192.168.10.113/cam/realmonitor?channel=1&subtype=0&unicast=true&proto=Onvif")
-	err := rtspSession.Play("rtsp://admin:hk234567@192.168.10.103:554/Streaming/Channels/101?transportmode=unicast&profile=Profil_1")
+	err := rtspSession.Play("rtsp://192.168.1.186:10554/dahua-55c6516500514c8684c323ea60f59068-2?channel=1")
 	// err := rtspSession.Play("rtsp://admin:Hk123456@192.168.10.107:554/Streaming/Channels/101?transportmode=unicast&profile=Profil_1")
 	if nil != err {
 		log.Print(err)

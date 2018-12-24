@@ -4,7 +4,7 @@ import (
 	"encoding/base64"
 	"strings"
 
-	"github.com/NodeBoy2/rtspclient/rtspclient"
+	"github.com/NodeBoy2/rtspclient"
 )
 
 type H264DataHandle struct {
