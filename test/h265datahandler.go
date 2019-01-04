@@ -25,15 +25,19 @@ func (dataHandler *H265DataHandle) SetMediaSubsession(media rtspclient.MediaSubs
 }
 
 func (dataHandler *H265DataHandle) GetHeader() []byte {
-	headerByte := []byte{0x00, 0x00, 0x00, 0x01}
-	header := make([]byte, 0)
-	header = append(header, headerByte...)
-	header = append(header, dataHandler.byteVps...)
-	header = append(header, headerByte...)
-	header = append(header, dataHandler.byteSps...)
-	header = append(header, headerByte...)
-	header = append(header, dataHandler.bytePps...)
-	return header
+	if len(dataHandler.byteVps) == 0 {
+		return nil
+	}
+	// headerByte := []byte{0x00, 0x00, 0x00, 0x01}
+	// header := make([]byte, 0)
+	// header = append(header, headerByte...)
+	// header = append(header, dataHandler.byteVps...)
+	// header = append(header, headerByte...)
+	// header = append(header, dataHandler.byteSps...)
+	// header = append(header, headerByte...)
+	// header = append(header, dataHandler.bytePps...)
+	// return header
+	return make([]byte, 0)
 }
 
 func (dataHandler *H265DataHandle) addHeader(data []byte) bool {
@@ -59,9 +63,9 @@ func (dataHandler *H265DataHandle) addHeader(data []byte) bool {
 func (dataHandler *H265DataHandle) ParsingData(src []byte) []byte {
 	headerByte := []byte{0x00, 0x00, 0x00, 0x01}
 	dst := make([]byte, 0)
-	if dataHandler.addHeader(src) {
-		dst = append(dst, dataHandler.GetHeader()...)
-	}
+	// if dataHandler.addHeader(src) && len(dataHandler.byteVps) != 0 {
+	// 	dst = append(dst, dataHandler.GetHeader()...)
+	// }
 	dst = append(dst, headerByte...)
 	dst = append(dst, src...)
 	return dst

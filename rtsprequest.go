@@ -80,6 +80,21 @@ func (session *RtspClientSession) SendTcpSetup(inTrackURL string, inClientRTPid 
 	return nil
 }
 
+func (session *RtspClientSession) SendPause() error {
+	if !session.rtspRequestInitial {
+		return errors.New("waiting last request Reply")
+	}
+
+	request := fmt.Sprintf(("PAUSE %s RTSP/1.0\r\n" +
+		"CSeq: %d\r\n" +
+		"Session: %s\r\n" +
+		"User-agent: %s\r\n"), session.rtspContext.rtspURL, session.rtspContext.cseq, session.rtspContext.sessionID, session.rtspContext.userAgent)
+
+	request += "\r\n"
+	session.sendRequst([]byte(request))
+	return nil
+}
+
 func (session *RtspClientSession) SendPlay(inStartTimeSec int, inSpeed int) error {
 	if !session.rtspRequestInitial {
 		return errors.New("waiting last request Reply")
@@ -87,16 +102,21 @@ func (session *RtspClientSession) SendPlay(inStartTimeSec int, inSpeed int) erro
 
 	var strSpeed string
 	if inSpeed != 1 {
-		strSpeed = fmt.Sprintf("Speed: %f5.2\r\n", float32(inSpeed))
+		strSpeed = fmt.Sprintf("Speed: %f\r\n", float32(inSpeed))
+	}
+
+	var strStartTime string
+	if inStartTimeSec != 0 {
+		strSpeed = fmt.Sprintf("Range: npt=%d.0-\r\n", float32(inStartTimeSec))
 	}
 
 	request := fmt.Sprintf(("PLAY %s RTSP/1.0\r\n" +
 		"CSeq: %d\r\n" +
 		"Session: %s\r\n" +
-		"Range: npt=%d.0-\r\n" +
+		"%s" +
 		"%s" +
 		"x-prebuffer: maxtime=3.0\r\n" +
-		"User-agent: %s\r\n"), session.rtspContext.rtspURL, session.rtspContext.cseq, session.rtspContext.sessionID, inStartTimeSec, strSpeed, session.rtspContext.userAgent)
+		"User-agent: %s\r\n"), session.rtspContext.rtspURL, session.rtspContext.cseq, session.rtspContext.sessionID, strStartTime, strSpeed, session.rtspContext.userAgent)
 
 	if 0 != session.rtspContext.bandwidth {
 		request += fmt.Sprintf("Bandwidth: %d\r\n", session.rtspContext.bandwidth)

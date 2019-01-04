@@ -31,6 +31,9 @@ func (dataHandler *H264DataHandle) SetMediaSubsession(media rtspclient.MediaSubs
 }
 
 func (dataHandler *H264DataHandle) GetHeader() []byte {
+	if len(dataHandler.byteSps) == 0 {
+		return nil
+	}
 	headerByte := []byte{0x00, 0x00, 0x00, 0x01}
 	header := make([]byte, 0)
 	header = append(header, headerByte...)

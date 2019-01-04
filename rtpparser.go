@@ -11,7 +11,8 @@ const (
 type RtpParser struct {
 	payloadBuf       []byte
 	payloadLen       int
-	rtpSourceHandler func([]byte) (bool, int)
+	rtpSourceHandler IRtpParseInterface
+	isMarkFrame      bool
 }
 
 func newRtpParser(codecName string) *RtpParser {
@@ -22,52 +23,61 @@ func newRtpParser(codecName string) *RtpParser {
 	}
 }
 
-func (rtpParser *RtpParser) pushData(src []byte) []byte {
-	isCompletersFrame, skipHeaderLen := rtpParser.rtpSourceHandler(src)
-	payloadData := src[skipHeaderLen:]
+func (rtpParser *RtpParser) splitRtpPacket(src []byte) ([]byte, []byte) {
+	var header, payload []byte
+	rtpParser.isMarkFrame, header, payload = rtpParser.rtpSourceHandler.SplitHeader(src)
+	return header, payload
+}
 
-	if rtpParser.payloadLen+len(payloadData) > MaxPayloadLength {
+func (rtpParser *RtpParser) pushData(header []byte, payload []byte) ([]byte, int) {
+	naluHeaderSize, naluSize := rtpParser.rtpSourceHandler.ParsingRtp(header, payload)
+	if naluSize > len(payload)-naluHeaderSize {
+		naluSize = len(payload)
+	}
+	nalu := payload[naluHeaderSize:naluSize]
+
+	if rtpParser.payloadLen+len(nalu) > MaxPayloadLength {
 		log.Print("playload too long")
 		data := make([]byte, rtpParser.payloadLen)
 		copy(data, rtpParser.payloadBuf[:rtpParser.payloadLen])
 
 		rtpParser.payloadLen = 0
-		if len(payloadData) < MaxPayloadLength {
-			copy(rtpParser.payloadBuf[rtpParser.payloadLen:rtpParser.payloadLen+len(payloadData)], payloadData)
-			rtpParser.payloadLen += len(payloadData)
+		if len(nalu) < MaxPayloadLength {
+			copy(rtpParser.payloadBuf[rtpParser.payloadLen:], nalu)
+			rtpParser.payloadLen += len(nalu)
 		}
-		return data
+		return data, naluSize
 	}
 
-	copy(rtpParser.payloadBuf[rtpParser.payloadLen:rtpParser.payloadLen+len(payloadData)], payloadData)
-	rtpParser.payloadLen += len(payloadData)
+	copy(rtpParser.payloadBuf[rtpParser.payloadLen:], nalu)
+	rtpParser.payloadLen += len(nalu)
 
-	if isCompletersFrame {
+	if rtpParser.isMarkFrame {
 		data := make([]byte, rtpParser.payloadLen)
 		copy(data, rtpParser.payloadBuf[:rtpParser.payloadLen])
 		rtpParser.payloadLen = 0
-		return data
+		return data, naluSize
 	}
-	return nil
+	return nil, naluSize
 }
 
-func getRTPSourceHandler(codecName string) func([]byte) (bool, int) {
+func getRTPSourceHandler(codecName string) IRtpParseInterface {
 	switch codecName {
 	case "H264":
 		{
-			return rtpSourceH264
+			return &H264RtpParser{}
 		}
 	case "H265", "HEVC":
 		{
-			return rtpSourceHevc
+			return &HevcRtpParser{}
 		}
 	case "bbw":
 		{
-			return rtpSourceMark
+			return &MarkRtpParser{}
 		}
 	default:
 		{
-			return rtpSourceSimple
+			return &SimpleRtpParser{}
 		}
 	}
 }

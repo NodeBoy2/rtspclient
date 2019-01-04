@@ -73,47 +73,70 @@ func (handler *RtspHandler) RtpEventHandler(data *rtspclient.RtspData) {
 	file, _ := os.OpenFile("D://test//"+strconv.Itoa(data.ChannelNum), os.O_WRONLY|os.O_APPEND, os.ModeAppend)
 	defer file.Close()
 
-	// file.Write(handler.mediaHandler[data.ChannelNum].ParsingData(data.Data))
+	file.Write(handler.mediaHandler[data.ChannelNum].ParsingData(data.Data))
 }
 
-func CalculateFramerate(session *rtspclient.RtspClientSession) {
-	lastVideoCout := int32(0)
-	for {
-		select {
-		case <-time.NewTicker(1 * time.Second).C:
-			log.Println("Current Frame Rate: ", session.VideoCout-lastVideoCout)
-			lastVideoCout = session.VideoCout
-		}
-	}
-}
 func main() {
 	rtspHandler := &RtspHandler{}
 	rtspSession := rtspclient.NewRtspClientSession(rtspHandler.RtpEventHandler, rtspHandler.RtspEventHandler)
 	// err := rtspSession.Play("rtsp://192.168.10.50:10556/playback?serial=6072b43ec06d49f79c49febac8c64676&channel=67&starttime=20181212000000&endtime=20181212000400&isreduce=0")
 	// err := rtspSession.Play("rtsp://192.168.1.247:10554/55c6516500514c8684c323ea60f59068?channel=7")
 	// err := rtspSession.PlayUseWebsocket("ws://192.168.1.76:8080/websocket", "rtsp://admin:hk234567@192.168.10.103:554/Streaming/Channels/101?transportmode=unicast&profile=Profil_1")
-	// err := rtspSession.Play("rtsp://fengyf:fengyf@192.168.10.113/cam/realmonitor?channel=1&subtype=0&unicast=true&proto=Onvif")
-	err := rtspSession.Play("rtsp://192.168.1.186:10554/dahua-55c6516500514c8684c323ea60f59068-2?channel=1")
-	// err := rtspSession.Play("rtsp://admin:Hk123456@192.168.10.107:554/Streaming/Channels/101?transportmode=unicast&profile=Profil_1")
+	err := rtspSession.Play("rtsp://192.168.1.103:10556/planback?channel=1&starttime=20181228134420&endtime=20181228151000&isreduce=0")
+	// err := rtspSession.Play("rtsp://192.168.1.186:10554/dahua-55c6516500514c8684c323ea60f59068-2?channel=1")
+	// err := rtspSession.Play("rtsp://192.168.1.233:10554/fbc52b8f4d5b4114bf2289ed6e334b85?channel=2")
+	// err := rtspSession.Play("rtsp://192.168.1.180:10554/8b8351e227084952b7ebc357e4d72cdd?channel=2")
 	if nil != err {
 		log.Print(err)
 		return
 	}
 
-	err = rtspSession.SendPlay(0, 4)
-	if nil != err {
-		log.Print(err)
-		return
-	}
-	go CalculateFramerate(rtspSession)
+	count := 0
+	for count < 5 {
+		select {
+		case <-time.After(5 * time.Second):
+			{
+				log.Print("time over")
+			}
+		}
 
-	response, errorInfo := rtspSession.WaitRtspResponse()
-	if nil != errorInfo {
-		log.Print(errorInfo)
-	}
-	if 200 != response.Status {
-		log.Print("Send Play error")
-		return
+		err = rtspSession.SendPause()
+		if nil != err {
+			log.Print(err)
+			return
+		}
+
+		response, errorInfo := rtspSession.WaitRtspResponse()
+		if nil != errorInfo {
+			log.Print(errorInfo)
+		}
+		if 200 != response.Status {
+			log.Print("Send Pause error")
+			return
+		}
+
+		select {
+		case <-time.After(3 * time.Second):
+			{
+				log.Print("time over")
+			}
+		}
+
+		err = rtspSession.SendPlay(0, 4)
+		if nil != err {
+			log.Print(err)
+			return
+		}
+
+		response, errorInfo = rtspSession.WaitRtspResponse()
+		if nil != errorInfo {
+			log.Print(errorInfo)
+		}
+		if 200 != response.Status {
+			log.Print("Send Play error")
+			return
+		}
+		count++
 	}
 
 	select {

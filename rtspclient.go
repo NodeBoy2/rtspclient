@@ -81,12 +81,6 @@ type RtspClientSession struct {
 	rtpChannelMap      map[int]*RtpParser
 	sdpInfo            *SDPInfo
 	RtpMediaMap        map[int]MediaSubsession
-	lastVideoTimestamp uint32
-	lastAudioTimestamp uint32
-	curVideoPts        uint32
-	curAudioPts        uint32
-	audioCout          int32
-	VideoCout          int32
 }
 
 func NewRtspClientSession(rtpHandler func(*RtspData), eventHandler func(*RtspEvent)) *RtspClientSession {
@@ -185,36 +179,14 @@ func (session *RtspClientSession) parsingRtp(data []byte) {
 	channelNum := int(header[1])
 	rtpParser, ok := session.rtpChannelMap[channelNum]
 	if ok {
-		payload := rtpParser.pushData(rtpData)
-		if nil != payload {
-			session.dataHandle(newRtspData(channelNum, session, payload))
-
-			if 0 == channelNum {
-				if session.lastVideoTimestamp != timestamp {
-					session.VideoCout++
-					if session.lastVideoTimestamp != 0 {
-						session.curVideoPts += ((timestamp - session.lastVideoTimestamp) / 90)
-						if timestamp < session.lastVideoTimestamp {
-							log.Println("video cout: ", session.VideoCout, " video pts: ", session.curVideoPts)
-							log.Println(timestamp, ",", session.lastVideoTimestamp)
-						}
-					}
-					session.lastVideoTimestamp = timestamp
-				}
-			} else if 2 == channelNum {
-				if session.lastAudioTimestamp != timestamp {
-					session.audioCout++
-					if session.lastAudioTimestamp != 0 {
-						session.curAudioPts += ((timestamp - session.lastAudioTimestamp) / 16)
-
-						if timestamp < session.lastAudioTimestamp {
-							log.Println("audio cout: ", session.audioCout, " audio pts: ", session.curAudioPts)
-							log.Println(timestamp, ",", session.lastAudioTimestamp)
-						}
-					}
-					session.lastAudioTimestamp = timestamp
-				}
+		totalLength := 0
+		header, payload := rtpParser.splitRtpPacket(rtpData)
+		for totalLength < len(payload) {
+			nalu, completionLength := rtpParser.pushData(header, payload[totalLength:])
+			if nil != nalu {
+				session.dataHandle(newRtspData(channelNum, session, nalu))
 			}
+			totalLength += completionLength
 		}
 	}
 }
