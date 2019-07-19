@@ -91,54 +91,6 @@ func main() {
 		return
 	}
 
-	count := 0
-	for count < 5 {
-		select {
-		case <-time.After(5 * time.Second):
-			{
-				log.Print("time over")
-			}
-		}
-
-		err = rtspSession.SendPause()
-		if nil != err {
-			log.Print(err)
-			return
-		}
-
-		response, errorInfo := rtspSession.WaitRtspResponse()
-		if nil != errorInfo {
-			log.Print(errorInfo)
-		}
-		if 200 != response.Status {
-			log.Print("Send Pause error")
-			return
-		}
-
-		select {
-		case <-time.After(3 * time.Second):
-			{
-				log.Print("time over")
-			}
-		}
-
-		err = rtspSession.SendPlay(0, 4)
-		if nil != err {
-			log.Print(err)
-			return
-		}
-
-		response, errorInfo = rtspSession.WaitRtspResponse()
-		if nil != errorInfo {
-			log.Print(errorInfo)
-		}
-		if 200 != response.Status {
-			log.Print("Send Play error")
-			return
-		}
-		count++
-	}
-
 	select {
 	case <-time.After(50 * time.Second):
 		{
