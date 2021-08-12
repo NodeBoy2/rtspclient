@@ -1,7 +1,7 @@
 package main
 
 import (
-	"log"
+	"fmt"
 	"os"
 	"strconv"
 	"sync"
@@ -29,7 +29,7 @@ func (handler *RtspHandler) WriteMediaHeader(session *rtspclient.RtspClientSessi
 		file, err := os.OpenFile("D://test//"+strconv.Itoa(index), os.O_WRONLY|os.O_CREATE|os.O_TRUNC, os.ModeExclusive)
 		defer file.Close()
 		if nil != err {
-			log.Print(err)
+			fmt.Print(err)
 			continue
 		}
 
@@ -46,7 +46,7 @@ func (handler *RtspHandler) WriteMediaHeader(session *rtspclient.RtspClientSessi
 }
 
 func (handler *RtspHandler) RtspEventHandler(event *rtspclient.RtspEvent) {
-	log.Print("event type: ", event.EventType)
+	fmt.Print("event type: ", event.EventType)
 	switch event.EventType {
 	case rtspclient.RtspEventRequestSuccess:
 		{
@@ -60,13 +60,13 @@ func (handler *RtspHandler) RtpEventHandler(data *rtspclient.RtspData) {
 	handler.lock.Lock()
 	defer handler.lock.Unlock()
 	if 20 > len(data.Data) {
-		log.Printf("%x", data.Data)
+		fmt.Printf("%x", data.Data)
 	} else {
-		log.Printf("%x", data.Data[:20])
+		fmt.Printf("%x", data.Data[:20])
 	}
 
 	if len(handler.mediaHandler) < 0 {
-		log.Println("media handler not init")
+		fmt.Println("media handler not init")
 		return
 	}
 
@@ -79,22 +79,21 @@ func (handler *RtspHandler) RtpEventHandler(data *rtspclient.RtspData) {
 func main() {
 	rtspHandler := &RtspHandler{}
 	rtspSession := rtspclient.NewRtspClientSession(rtspHandler.RtpEventHandler, rtspHandler.RtspEventHandler)
-	// err := rtspSession.Play("rtsp://192.168.10.50:10556/playback?serial=6072b43ec06d49f79c49febac8c64676&channel=67&starttime=20181212000000&endtime=20181212000400&isreduce=0")
-	// err := rtspSession.Play("rtsp://192.168.1.247:10554/55c6516500514c8684c323ea60f59068?channel=7")
-	// err := rtspSession.PlayUseWebsocket("ws://192.168.1.76:8080/websocket", "rtsp://admin:hk234567@192.168.10.103:554/Streaming/Channels/101?transportmode=unicast&profile=Profil_1")
 	err := rtspSession.Play("rtsp://192.168.1.103:10556/planback?channel=1&starttime=20181228134420&endtime=20181228151000&isreduce=0")
-	// err := rtspSession.Play("rtsp://192.168.1.186:10554/dahua-55c6516500514c8684c323ea60f59068-2?channel=1")
-	// err := rtspSession.Play("rtsp://192.168.1.233:10554/fbc52b8f4d5b4114bf2289ed6e334b85?channel=2")
-	// err := rtspSession.Play("rtsp://192.168.1.180:10554/8b8351e227084952b7ebc357e4d72cdd?channel=2")
 	if nil != err {
-		log.Print(err)
+		fmt.Print(err)
 		return
 	}
+	err = rtspSession.SendPlay(0, 2)
+	if err != nil {
+		fmt.Print(err)
+	}
+	rtspSession.WaitRtspResponse()
 
 	select {
 	case <-time.After(50 * time.Second):
 		{
-			log.Print("time over")
+			fmt.Print("time over")
 		}
 	}
 
@@ -103,8 +102,8 @@ func main() {
 	select {
 	case <-time.After(1 * time.Second):
 		{
-			log.Print("time over")
+			fmt.Print("time over")
 		}
 	}
-	log.Print("main() disconnect.")
+	fmt.Print("main() disconnect.")
 }

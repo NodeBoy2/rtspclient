@@ -1,3 +1,8 @@
-module rtspclient
+module github.com/NodeBoy2/rtspclient
 
-require github.com/gorilla/websocket v1.4.0
+go 1.16
+
+require (
+	github.com/gorilla/websocket v1.4.0
+	github.com/pkg/errors v0.9.1
+)
